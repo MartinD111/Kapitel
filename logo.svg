@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 200" fill="none">
+  <!-- Pillar icon on the left -->
+  <g id="pillar-icon">
+    <!-- Top arc -->
+    <path d="M 20 30 Q 90 10, 160 30" stroke="#1e2b9f" stroke-width="6" fill="none" stroke-linecap="round"/>
+    
+    <!-- Middle arcs -->
+    <path d="M 30 50 Q 90 35, 150 50" stroke="#1e2b9f" stroke-width="6" fill="none" stroke-linecap="round"/>
+    <path d="M 35 70 Q 90 55, 145 70" stroke="#1e2b9f" stroke-width="6" fill="none" stroke-linecap="round"/>
+    
+    <!-- Three vertical pillars -->
+    <rect x="50" y="75" width="12" height="105" fill="#1e2b9f" rx="2"/>
+    <rect x="89" y="75" width="12" height="105" fill="#1e2b9f" rx="2"/>
+    <rect x="128" y="75" width="12" height="105" fill="#1e2b9f" rx="2"/>
+  </g>
+  
+  <!-- KAPITEL text -->
+  <text x="180" y="130" font-family="'Inter', 'Arial', sans-serif" font-size="90" font-weight="700" fill="#1e2b9f" letter-spacing="-2">KAPITEL</text>
+  
+  <!-- d.o.o. text -->
+  <text x="720" y="140" font-family="'Inter', 'Arial', sans-serif" font-size="50" font-weight="400" fill="#1e2b9f">d.o.o.</text>
+</svg>

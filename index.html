@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="sl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kapitel d.o.o. | Stanovanjski dvojčki Vanganel</title>
+    <meta name="description"
+        content="Kapitel d.o.o. - Gradnja stanovanjskih objektov. Trenutni projekt: Stanovanjski dvojčki v Vanganelu.">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Leaflet CSS (Za zemljevid) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        royal: {
+                            50: '#f0f4ff',
+                            100: '#e0eaff',
+                            200: '#c7d9ff',
+                            300: '#9ebaff',
+                            400: '#6f93ff',
+                            500: '#486aff',
+                            600: '#2541e6', // Primary Royal Blue
+                            700: '#1d31c4',
+                            800: '#1e2b9f', // Deep Royal
+                            900: '#1e287f',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    borderRadius: {
+                        'pill': '9999px',
+                    },
+                    transitionProperty: {
+                        'width': 'width',
+                        'height': 'height',
+                        'spacing': 'margin, padding',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        html {
+            scroll-behavior: smooth;
+        }
+
+        .fade-in-up {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+        }
+
+        .fade-in-up.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .hero-overlay {
+            background: linear-gradient(rgba(30, 43, 159, 0.7), rgba(29, 49, 196, 0.6));
+        }
+
+        /* Hide scrollbar for clean look */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Popravek za Leaflet v Tailwind okolju */
+        .leaflet-pane {
+            z-index: 0 !important;
+        }
+
+        .leaflet-control {
+            z-index: 1 !important;
+        }
+
+        .leaflet-top,
+        .leaflet-bottom {
+            z-index: 1 !important;
+        }
+
+        /* Mobile Bottom Nav Transitions */
+        .bottom-nav-label {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+            white-space: nowrap;
+            max-height: 20px;
+            /* Max height for text */
+            opacity: 1;
+            margin-top: 4px;
+            /* Space between icon and text */
+        }
+
+        /* Shrunk State */
+        .nav-shrunk .bottom-nav-label {
+            max-height: 0;
+            opacity: 0;
+            margin-top: 0;
+        }
+
+        .nav-shrunk {
+            padding-top: 0.75rem;
+            /* Equivalent to py-3 */
+            padding-bottom: 0.75rem;
+            gap: 1.5rem;
+            /* Increase gap between icons when shrunk */
+        }
+
+        .mobile-nav-link {
+            transition: all 0.3s ease;
+        }
+    </style>
+</head>
+
+<body
+    class="font-sans text-gray-700 bg-gray-50 antialiased selection:bg-royal-200 selection:text-royal-900 pb-28 md:pb-0 text-center">
+
+    <!-- DESKTOP Navigation (Floating Pill - Centered & Stacked) -->
+    <div class="hidden md:flex fixed top-6 left-1/2 transform -translate-x-1/2 z-50 justify-center">
+        <nav
+            class="relative bg-white/70 backdrop-blur-xl shadow-xl shadow-royal-900/10 rounded-full px-3 py-2 flex items-center transition-all duration-300 border border-white/60 min-h-[72px]">
+
+            <!-- Sliding Indicator (Background Pill) -->
+            <div id="nav-indicator"
+                class="absolute h-[calc(100%-16px)] top-2 left-0 bg-royal-600 rounded-full transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] shadow-lg shadow-royal-500/30 z-0 opacity-100 pointer-events-none">
+            </div>
+
+            <!-- Logo -->
+            <div class="flex items-center cursor-pointer mr-8 pl-4 z-10" onclick="navigateTo('home')">
+                <img src="logo_original.png" alt="Kapitel d.o.o." class="h-12 w-auto">
+            </div>
+
+            <!-- Desktop Menu Items (Vertical Stack) -->
+            <div class="flex items-center relative z-10 space-x-2">
+                <a href="#" onclick="handleNavClick(event, 'home', 'home')"
+                    class="nav-link px-6 py-2 rounded-full transition-colors duration-300 flex flex-col items-center justify-center gap-0.5 group w-24"
+                    data-section="home">
+                    <i
+                        class="fas fa-home text-lg mb-0.5 group-hover:-translate-y-0.5 transition-transform duration-300"></i>
+                    <span class="text-[10px] font-bold uppercase tracking-wider">Domov</span>
+                </a>
+                <a href="#" onclick="handleNavClick(event, 'home', 'about')"
+                    class="nav-link px-6 py-2 rounded-full transition-colors duration-300 flex flex-col items-center justify-center gap-0.5 group w-24"
+                    data-section="about">
+                    <i
+                        class="fas fa-info-circle text-lg mb-0.5 group-hover:-translate-y-0.5 transition-transform duration-300"></i>
+                    <span class="text-[10px] font-bold uppercase tracking-wider">O nas</span>
+                </a>
+                <a href="#" onclick="handleNavClick(event, 'home', 'projects')"
+                    class="nav-link px-6 py-2 rounded-full transition-colors duration-300 flex flex-col items-center justify-center gap-0.5 group w-24"
+                    data-section="projects">
+                    <i
+                        class="fas fa-building text-lg mb-0.5 group-hover:-translate-y-0.5 transition-transform duration-300"></i>
+                    <span class="text-[10px] font-bold uppercase tracking-wider">Projekti</span>
+                </a>
+
+                <a href="#" onclick="handleNavClick(event, 'home', 'contact')"
+                    class="nav-link px-6 py-2 rounded-full transition-colors duration-300 flex flex-col items-center justify-center gap-0.5 group w-24"
+                    data-section="contact">
+                    <i
+                        class="fas fa-envelope text-lg mb-0.5 group-hover:-translate-y-0.5 transition-transform duration-300"></i>
+                    <span class="text-[10px] font-bold uppercase tracking-wider">Kontakt</span>
+                </a>
+            </div>
+        </nav>
+    </div>
+
+    <!-- MOBILE Header (Logo Only - Fixed Top) -->
+    <div
+        class="md:hidden fixed top-0 left-0 right-0 z-40 bg-white/80 backdrop-blur-md border-b border-white/50 px-6 py-4 flex justify-center shadow-sm">
+        <div class="flex items-center cursor-pointer" onclick="navigateTo('home')">
+            <img src="logo_original.png" alt="Kapitel d.o.o." class="h-10 w-auto">
+        </div>
+    </div>
+
+    <!-- MOBILE Bottom Navigation -->
+    <div
+        class="md:hidden fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-[95%] flex justify-center pointer-events-none">
+        <nav id="mobile-bottom-nav"
+            class="pointer-events-auto bg-royal-900/60 backdrop-blur-3xl shadow-2xl shadow-royal-900/30 rounded-[2rem] px-4 py-3 flex items-center justify-between transition-all duration-300 border border-white/20 gap-1 min-h-[60px]">
+
+            <!-- Home -->
+            <a href="#" onclick="handleNavClick(event, 'home', 'home')"
+                class="mobile-nav-link flex flex-col items-center justify-center p-2 w-full rounded-2xl text-white/60 hover:text-white hover:bg-white/10 transition-all relative group"
+                data-section="home">
+                <i class="fas fa-home text-xl"></i>
+                <span
+                    class="bottom-nav-label text-[10px] font-bold tracking-wide uppercase shadow-black drop-shadow-md">Domov</span>
+                <!-- Active Dot -->
+                <div
+                    class="active-dot absolute -top-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-white rounded-full opacity-0 transition-opacity">
+                </div>
+            </a>
+
+            <!-- About -->
+            <a href="#" onclick="handleNavClick(event, 'home', 'about')"
+                class="mobile-nav-link flex flex-col items-center justify-center p-2 w-full rounded-2xl text-white/60 hover:text-white hover:bg-white/10 transition-all relative group"
+                data-section="about">
+                <i class="fas fa-info-circle text-xl"></i>
+                <span
+                    class="bottom-nav-label text-[10px] font-bold tracking-wide uppercase shadow-black drop-shadow-md">O
+                    nas</span>
+                <div
+                    class="active-dot absolute -top-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-white rounded-full opacity-0 transition-opacity">
+                </div>
+            </a>
+
+            <!-- Projects -->
+            <a href="#" onclick="handleNavClick(event, 'home', 'projects')"
+                class="mobile-nav-link flex flex-col items-center justify-center p-2 w-full rounded-2xl text-white/60 hover:text-white hover:bg-white/10 transition-all relative group"
+                data-section="projects">
+                <i class="fas fa-city text-xl"></i>
+                <span
+                    class="bottom-nav-label text-[10px] font-bold tracking-wide uppercase shadow-black drop-shadow-md">Projekti</span>
+                <div
+                    class="active-dot absolute -top-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-white rounded-full opacity-0 transition-opacity">
+                </div>
+            </a>
+
+
+
+            <!-- Contact -->
+            <a href="#" onclick="handleNavClick(event, 'home', 'contact')"
+                class="mobile-nav-link flex flex-col items-center justify-center p-2 w-full rounded-2xl text-white/60 hover:text-white hover:bg-white/10 transition-all relative group"
+                data-section="contact">
+                <i class="fas fa-envelope text-xl"></i>
+                <span
+                    class="bottom-nav-label text-[10px] font-bold tracking-wide uppercase shadow-black drop-shadow-md">Kontakt</span>
+                <div
+                    class="active-dot absolute -top-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-white rounded-full opacity-0 transition-opacity">
+                </div>
+            </a>
+
+        </nav>
+    </div>
+
+    <!-- MAIN VIEW CONTAINER -->
+    <div id="view-container">
+
+        <!-- VIEW 1: HOME LANDING PAGE -->
+        <div id="view-home" class="view-section pt-20 md:pt-0">
+
+            <!-- Hero Sekcija -->
+            <section id="home"
+                class="relative h-screen min-h-[600px] flex items-center justify-center overflow-hidden rounded-b-[3rem] shadow-2xl mx-2 mt-2 sm:mx-0 sm:mt-0 sm:rounded-none">
+                <div class="absolute inset-0 z-0">
+                    <img src="parcela_2.png" alt="Dvojčki Vanganel Render" class="w-full h-full object-cover"
+                        onerror="this.src='https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=2070&auto=format&fit=crop'">
+                </div>
+                <div class="absolute inset-0 hero-overlay z-10 sm:rounded-none rounded-b-[3rem]"></div>
+
+                <div class="relative z-20 text-center px-4 max-w-4xl mx-auto fade-in-up mt-16">
+                    <span
+                        class="inline-block py-1.5 px-4 rounded-full bg-white/20 border border-white/30 text-white text-xs font-bold mb-6 tracking-widest uppercase backdrop-blur-md shadow-lg">
+                        Novo v prodaji
+                    </span>
+                    <h1 class="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight drop-shadow-lg">
+                        Stanovanjski dvojčki <br /> <span class="text-royal-200">Vanganel</span>
+                    </h1>
+                    <p
+                        class="text-lg md:text-xl text-gray-100 mb-10 max-w-2xl mx-auto font-light leading-relaxed text-center">
+                        Sodobno bivanje v objemu narave. Odkrijte svoj novi dom v enem izmed naših štirih ekskluzivnih
+                        stanovanj.
+                    </p>
+                    <div class="flex flex-col sm:flex-row justify-center gap-4">
+                        <button onclick="openProjectDetails()"
+                            class="px-8 py-4 bg-white text-royal-700 font-bold rounded-full hover:bg-royal-50 transition duration-300 shadow-xl transform hover:-translate-y-1">
+                            Oglejte si projekt
+                        </button>
+                        <a href="#contact"
+                            class="px-8 py-4 bg-royal-600/30 backdrop-blur-sm border border-white/40 text-white font-bold rounded-full hover:bg-white/10 transition duration-300 hover:shadow-lg">
+                            Stopite v stik
+                        </a>
+                    </div>
+                </div>
+            </section>
+
+            <!-- O podjetju (Razširjeno) -->
+            <section id="about" class="py-32 bg-white">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="text-center max-w-4xl mx-auto mb-20 fade-in-up">
+                        <h4 class="text-royal-600 font-bold uppercase tracking-wider text-xs mb-3">Kapitel d.o.o.</h4>
+                        <h2 class="text-3xl md:text-5xl font-bold text-gray-900 mb-8 leading-tight">Gradimo kakovostno
+                            prihodnost<br />na trdnih temeljih</h2>
+
+                        <div class="space-y-6 text-gray-600 text-lg leading-relaxed text-center">
+                            <p>
+                                Podjetje Kapitel d.o.o. je sinonim za zanesljivost, strokovnost in vrhunsko kakovost na
+                                področju gradnje stanovanjskih nepremičnin. Svoje poslanstvo gradimo na dolgoletnih
+                                izkušnjah in poglobljenem razumevanju potreb sodobnega bivanja. Ne gradimo le objektov,
+                                temveč ustvarjamo domove, kjer se prepletajo udobje, funkcionalnost in estetika.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-10 fade-in-up mb-32">
+                        <div
+                            class="bg-royal-50 p-10 rounded-[2rem] text-center hover:shadow-xl transition duration-300 transform hover:-translate-y-1">
+                            <div
+                                class="w-16 h-16 bg-white rounded-full flex items-center justify-center text-royal-600 text-2xl shadow-sm mx-auto mb-6">
+                                <i class="fas fa-drafting-compass"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold text-gray-900 mb-4">Moderna Arhitektura</h3>
+                            <p class="text-gray-600 leading-relaxed text-sm text-center">
+                                Naši projekti izstopajo po premišljenih arhitekturnih rešitvah. Ustvarjamo odprte,
+                                svetle prostore s funkcionalnimi tlorisi, ki so prilagojeni dinamiki sodobnega načina
+                                življenja.
+                            </p>
+                        </div>
+                        <div
+                            class="bg-royal-50 p-10 rounded-[2rem] text-center hover:shadow-xl transition duration-300 transform hover:-translate-y-1">
+                            <div
+                                class="w-16 h-16 bg-white rounded-full flex items-center justify-center text-royal-600 text-2xl shadow-sm mx-auto mb-6">
+                                <i class="fas fa-certificate"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold text-gray-900 mb-4">Kakovostna Gradnja</h3>
+                            <p class="text-gray-600 leading-relaxed text-sm text-center">
+                                Pri gradnji ne sprejemamo kompromisov. Uporabljamo izključno materiale preverjene
+                                kakovosti in sodelujemo z zanesljivimi izvajalci, kar zagotavlja trajnost in varnost
+                                vaša doma.
+                            </p>
+                        </div>
+                        <div
+                            class="bg-royal-50 p-10 rounded-[2rem] text-center hover:shadow-xl transition duration-300 transform hover:-translate-y-1">
+                            <div
+                                class="w-16 h-16 bg-white rounded-full flex items-center justify-center text-royal-600 text-2xl shadow-sm mx-auto mb-6">
+                                <i class="fas fa-leaf"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold text-gray-900 mb-4">Energetska Učinkovitost</h3>
+                            <p class="text-gray-600 leading-relaxed text-sm text-center">
+                                Vsi naši objekti so grajeni po najvišjih standardih energetske učinkovitosti. To pomeni
+                                nižje obratovalne stroške, večje bivalno ugodje in manjši vpliv na okolje.
+                            </p>
+                        </div>
+                    </div>
+            </section>
+
+            <!-- Projects Section -->
+            <section id="projects" class="py-24 bg-gray-50">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="flex flex-col md:flex-row justify-between items-end mb-12 fade-in-up">
+                        <div class="w-full text-center md:text-left">
+                            <h4 class="text-royal-600 font-bold uppercase tracking-wider text-xs mb-2">Aktualni Projekt
+                            </h4>
+                            <h2 class="text-3xl md:text-4xl font-bold text-gray-900">Razpoložljive Enote</h2>
+                        </div>
+                    </div>
+
+                    <!-- Single Project Card -->
+                    <div onclick="openProjectDetails()" class="group cursor-pointer fade-in-up text-left">
+                        <div
+                            class="bg-white rounded-[2.5rem] overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 border border-gray-100">
+                            <div class="grid grid-cols-1 lg:grid-cols-2">
+                                <div class="relative h-80 lg:h-auto overflow-hidden">
+                                    <div class="absolute top-6 left-6 z-10">
+                                        <span
+                                            class="bg-white/90 backdrop-blur text-royal-700 text-xs font-bold px-4 py-2 rounded-full uppercase tracking-wide shadow-sm">4
+                                            Enote</span>
+                                    </div>
+                                    <img src="parcela_1.png" alt="Vanganel Dvojčki"
+                                        class="w-full h-full object-cover transform group-hover:scale-105 transition duration-700 ease-in-out"
+                                        onerror="this.src='https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?q=80&w=2053&auto=format&fit=crop'">
+                                </div>
+                                <div class="p-8 lg:p-12 flex flex-col justify-center">
+                                    <h3
+                                        class="text-3xl font-bold text-gray-900 mb-4 group-hover:text-royal-600 transition-colors">
+                                        Stanovanjski dvojčki Vanganel</h3>
+                                    <p class="text-gray-600 mb-8 leading-relaxed">Na voljo sta dva objekta (A in B),
+                                        vsak z dvema samostojnima stanovanjskima enotama.</p>
+                                    <div class="grid grid-cols-2 gap-6 mb-8">
+                                        <div class="flex items-center text-gray-500"><i
+                                                class="fas fa-home text-royal-400 mr-3"></i> 4 x ~90 m²</div>
+                                        <div class="flex items-center text-gray-500"><i
+                                                class="fas fa-ruler-combined text-royal-400 mr-3"></i> Parcele do 894 m²
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <span
+                                            class="inline-flex items-center justify-center px-8 py-3 bg-royal-600 text-white font-bold rounded-full transition-all duration-300 group-hover:bg-royal-700 group-hover:shadow-lg shadow-royal-200">
+                                            Izberi svojo enoto <i
+                                                class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="w-full h-[400px] bg-gray-100 relative z-0 border-t border-gray-100">
+                                <div id="map-vanganel" class="w-full h-full"></div>
+                            </div>
+
+                            <!-- Site Plan / Tloris Parcele -->
+                            <div class="w-full bg-white border-t border-gray-100 p-8">
+                                <div class="max-w-5xl mx-auto">
+                                    <h3 class="text-2xl font-bold text-gray-900 mb-4 text-center">Tloris parcele</h3>
+                                    <p class="text-gray-600 mb-6 text-center">Razporeditev objektov A in B ter parcelnih
+                                        številk</p>
+                                    <div class="bg-gray-50 rounded-2xl p-4 overflow-hidden">
+                                        <img src="tloris.jpg" alt="Tloris parcele - Vanganel"
+                                            class="w-full h-auto rounded-lg shadow-lg">
+                                    </div>
+                                    <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
+                                        <div class="bg-royal-50 p-4 rounded-xl">
+                                            <p class="font-bold text-royal-700 mb-2">📊 Skupna velikost gradbenih
+                                                parcel:</p>
+                                            <p class="text-lg font-bold text-gray-900">2.698 m²</p>
+                                        </div>
+                                        <div class="bg-royal-50 p-4 rounded-xl">
+                                            <p class="font-bold text-royal-700 mb-2">📐 Skupna velikost vseh parcel:</p>
+                                            <p class="text-lg font-bold text-gray-900">2.773 m²</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+        </div>
+        </section>
+
+
+    </div>
+
+    <!-- VIEW 2: PROJECT DETAILS (Vanganel) -->
+    <div id="view-project" class="hidden min-h-screen bg-white pt-20 md:pt-0">
+        <!-- Header -->
+        <div class="bg-royal-900 text-white pt-32 pb-16 rounded-b-[3rem] px-4 relative overflow-hidden">
+            <div class="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]">
+            </div>
+            <div class="max-w-7xl mx-auto relative z-10 text-center">
+                <button onclick="navigateTo('home', 'projects')"
+                    class="mb-8 flex items-center justify-center text-royal-200 hover:text-white transition group mx-auto">
+                    <div
+                        class="w-10 h-10 rounded-full border border-royal-700 flex items-center justify-center mr-3 group-hover:bg-royal-800 transition">
+                        <i class="fas fa-arrow-left"></i>
+                    </div>
+                    <span class="font-medium">Nazaj na domačo stran</span>
+                </button>
+                <h1 class="text-4xl md:text-5xl font-bold mb-4">Objekta A in B</h1>
+                <p class="text-xl text-royal-200 max-w-2xl mx-auto">Izberite svojo enoto med 4 razpoložljivimi
+                    enotami v Vanganelu.</p>
+            </div>
+        </div>
+
+        <!-- Content -->
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-left">
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-12 mb-16">
+                <!-- Project Info -->
+                <div class="lg:col-span-1">
+                    <div class="bg-gray-50 rounded-[2rem] p-8 sticky top-28">
+                        <h3 class="text-xl font-bold text-gray-900 mb-6">Opis projekta</h3>
+                        <p class="text-gray-600 mb-6 text-sm leading-relaxed">
+                            Projekt obsega gradnjo dveh stanovanjskih dvojčkov (Objekt A in Objekt B). Vsak objekt
+                            je etažnosti P + 1 in ponuja moderno zasnovo bivanja.
+                        </p>
+                        <h4 class="font-bold text-gray-900 mb-3 text-sm uppercase">Specifikacije enot:</h4>
+                        <ul class="space-y-3 mb-8">
+                            <li class="flex items-start text-sm text-gray-600">
+                                <i class="fas fa-check-circle text-royal-500 mt-1 mr-2"></i> <strong>Pritličje
+                                    (44,20 m²):</strong> Predprostor, Kuhinja, Dnevni prostor z jedilnico, WC,
+                                Shramba/Tehnika.
+                            </li>
+                            <li class="flex items-start text-sm text-gray-600">
+                                <i class="fas fa-check-circle text-royal-500 mt-1 mr-2"></i> <strong>Nadstropje
+                                    (45,91 m²):</strong> Hodnik, Kopalnica, Soba za goste, 2 Otroški sobi.
+                            </li>
+                            <li class="flex items-start text-sm text-gray-600">
+                                <i class="fas fa-check-circle text-royal-500 mt-1 mr-2"></i> <strong>Skupaj
+                                    Neto:</strong> ~90,11 m²
+                            </li>
+                        </ul>
+                        <button onclick="scrollToContact()"
+                            class="w-full py-4 bg-royal-100 text-royal-700 font-bold rounded-full hover:bg-royal-200 transition">
+                            Pošlji povpraševanje
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Apartments List -->
+                <div class="lg:col-span-2">
+                    <h3 class="text-2xl font-bold text-gray-900 mb-8 text-center md:text-left">Izberite enoto</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="apartment-list">
+                        <!-- Generated via JS -->
+                    </div>
+                </div>
+            </div>
+
+
+
+        </div>
+    </div>
+
+    <!-- VIEW 3: APARTMENT DETAILS -->
+    <div id="view-apartment" class="hidden min-h-screen bg-white pt-20 md:pt-0">
+        <div id="apartment-details-content">
+            <!-- Content injected via JS -->
+        </div>
+    </div>
+
+    </div>
+
+    <!-- Skupni Kontakt Section (Vidno na vseh, razen če je skrito) -->
+    <section id="contact" class="py-20 bg-white border-t border-gray-100">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div
+                class="bg-royal-600 rounded-[3rem] p-8 md:p-16 text-center text-white relative overflow-hidden shadow-2xl">
+                <div
+                    class="absolute top-0 right-0 -mt-10 -mr-10 w-64 h-64 bg-royal-500 rounded-full opacity-50 blur-3xl">
+                </div>
+                <div
+                    class="absolute bottom-0 left-0 -mb-10 -ml-10 w-64 h-64 bg-royal-800 rounded-full opacity-50 blur-3xl">
+                </div>
+
+                <div class="relative z-10 max-w-2xl mx-auto">
+                    <h2 class="text-3xl md:text-4xl font-bold mb-6">Vas zanima ogled?</h2>
+                    <p class="text-royal-100 mb-10 text-lg">Za več informacij o projektu Vanganel ali dogovor za
+                        sestanek nas kontaktirajte.</p>
+
+                    <div class="flex flex-col md:flex-row justify-center gap-6">
+                        <a href="mailto:sanja@kapitel.si"
+                            class="px-8 py-4 bg-white text-royal-700 font-bold rounded-full hover:bg-royal-50 transition duration-300 shadow-lg">
+                            <i class="fas fa-envelope mr-2"></i> Pošlji Email
+                        </a>
+                        <!-- Removed Phone Number -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Simple -->
+            <div class="text-center mt-12 text-gray-400 text-sm">
+                &copy; 2024 Kapitel d.o.o. | Vse pravice pridržane
+            </div>
+        </div>
+    </section>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // Data Store based on DGD Documents
+        const apartments = [
+            {
+                id: 'A1',
+                name: 'Enota A1',
+                type: 'Objekt A - Leva enota',
+                size: '90,11 m²',
+                price: 'Po dogovoru',
+                status: 'available',
+                rooms: 4,
+                description: 'Prostorna enota v objektu A.<br><br><strong>Tehnični podatki:</strong><br>Širina objekta: 12,00 m<br>Višinske kote terena/objekta: Gibljejo se med 42,80 m na severni strani in 45,25 m na južni strani.',
+                features: ['Parcela: 894 m²', 'Parkirna mesta: P1, P2, P3', 'P + 1', 'Neto površina 90,11 m²'],
+                image: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?q=80&w=2070&auto=format&fit=crop'
+            },
+            {
+                id: 'A2',
+                name: 'Enota A2',
+                type: 'Objekt A - Desna enota',
+                size: '90,11 m²',
+                price: 'Po dogovoru',
+                status: 'available',
+                rooms: 4,
+                description: 'Desna enota v objektu A.<br><br><strong>Tehnični podatki:</strong><br>Širina objekta: 12,00 m<br>Višinske kote terena/objekta: Gibljejo se med 42,80 m na severni strani in 45,25 m na južni strani.',
+                features: ['Parcela: 769 m²', 'Parkirna mesta: P10, P11, P12', 'P + 1', 'Neto površina 90,11 m²'],
+                image: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?q=80&w=2070&auto=format&fit=crop'
+            },
+            {
+                id: 'B1',
+                name: 'Enota B1',
+                type: 'Objekt B - Leva enota',
+                size: '90,11 m²',
+                price: 'Po dogovoru',
+                status: 'available',
+                rooms: 4,
+                description: 'Enota v objektu B.<br><br><strong>Tehnični podatki:</strong><br>Širina objekta: 12,00 m<br>Višinske kote terena/objekta: 39,10 m (zgornji rob) in 42,25 m (spodnji rob).',
+                features: ['Parcela: 560 m²', 'Parkirna mesta: P13, P14, P15', 'P + 1', 'Neto površina 90,11 m²'],
+                image: 'https://images.unsplash.com/photo-1560185007-cde436f6a4d0?q=80&w=2070&auto=format&fit=crop'
+            },
+            {
+                id: 'B2',
+                name: 'Enota B2',
+                type: 'Objekt B - Desna enota',
+                size: '90,11 m²',
+                price: 'Po dogovoru',
+                status: 'available',
+                rooms: 4,
+                description: 'Zaključna enota v objektu B.<br><br><strong>Tehnični podatki:</strong><br>Širina objekta: 12,00 m<br>Višinske kote terena/objekta: 39,10 m (zgornji rob) in 42,25 m (spodnji rob).',
+                features: ['Parcela: 475 m²', 'Parkirna mesta: P16, P17, P18', 'P + 1', 'Neto površina 90,11 m²'],
+                image: 'https://images.unsplash.com/photo-1502005229766-939cb6a50fe8?q=80&w=2070&auto=format&fit=crop'
+            }
+        ];
+
+        // Map Variables
+        let mapInstance = null;
+
+        // Init Map Function
+        function initMap() {
+            if (mapInstance) return; // Prevent re-init
+
+            // Vanganel Coordinates (Approx)
+            const vanganelCenter = [45.5205, 13.7805];
+
+            mapInstance = L.map('map-vanganel').setView(vanganelCenter, 16);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(mapInstance);
+
+            // Mock Green Polygon (Parcela)
+            const parcelCoords = [
+                [45.5208, 13.7800],
+                [45.5208, 13.7812],
+                [45.5200, 13.7812],
+                [45.5200, 13.7800]
+            ];
+
+            const polygon = L.polygon(parcelCoords, {
+                color: '#16a34a', // Border Green
+                fillColor: '#22c55e', // Fill Green
+                fillOpacity: 0.4,
+                weight: 2
+            }).addTo(mapInstance);
+
+            polygon.bindPopup("<b>Lokacija Projekta</b><br>Stanovanjski dvojčki").openPopup();
+        }
+
+        // --- NAVIGATION LOGIC START ---
+
+        // Function to move the pill indicator (Desktop)
+        function updateNavIndicator(targetLink) {
+            const indicator = document.getElementById('nav-indicator');
+            const nav = targetLink.closest('nav');
+
+            if (!targetLink || !indicator || !nav) return;
+
+            // Get positions relative to the nav container
+            const navRect = nav.getBoundingClientRect();
+            const linkRect = targetLink.getBoundingClientRect();
+
+            const left = linkRect.left - navRect.left;
+            const width = linkRect.width;
+
+            // Apply styles
+            indicator.style.width = `${width}px`;
+            indicator.style.transform = `translateX(${left}px)`;
+
+            // Set colors
+            nav.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('text-white');
+                link.classList.add('text-gray-600');
+            });
+            targetLink.classList.remove('text-gray-600');
+            targetLink.classList.add('text-white');
+        }
+
+        // Handle clicks on nav links
+        function handleNavClick(event, view, sectionId) {
+            event.preventDefault();
+
+            // Handle active states (Desktop & Mobile)
+            const target = event.currentTarget;
+
+            // Desktop Update
+            if (window.innerWidth >= 768) {
+                updateNavIndicator(target);
+            }
+
+            // Mobile Update
+            if (window.innerWidth < 768) {
+                document.querySelectorAll('.mobile-nav-link').forEach(link => {
+                    link.classList.remove('text-white', 'bg-white/10');
+                    link.classList.add('text-white/60');
+                    link.querySelector('.active-dot').classList.remove('opacity-100');
+                    link.querySelector('.active-dot').classList.add('opacity-0');
+                });
+                target.classList.remove('text-white/60');
+                target.classList.add('text-white', 'bg-white/10');
+                target.querySelector('.active-dot').classList.remove('opacity-0');
+                target.querySelector('.active-dot').classList.add('opacity-100');
+            }
+
+            // Perform navigation
+            navigateTo(view, sectionId);
+        }
+
+        // Scroll Observer for Active State
+        const sectionObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const id = entry.target.id;
+
+                    // Desktop
+                    const activeLinkDesktop = document.querySelector(`.nav-link[data-section="${id}"]`);
+                    if (activeLinkDesktop && window.innerWidth >= 768) {
+                        updateNavIndicator(activeLinkDesktop);
+                    }
+
+                    // Mobile
+                    const activeLinkMobile = document.querySelector(`.mobile-nav-link[data-section="${id}"]`);
+                    if (activeLinkMobile && window.innerWidth < 768) {
+                        document.querySelectorAll('.mobile-nav-link').forEach(link => {
+                            link.classList.remove('text-white', 'bg-white/10');
+                            link.classList.add('text-white/60');
+                            link.querySelector('.active-dot').classList.remove('opacity-100');
+                            link.querySelector('.active-dot').classList.add('opacity-0');
+                        });
+                        activeLinkMobile.classList.remove('text-white/60');
+                        activeLinkMobile.classList.add('text-white', 'bg-white/10');
+                        activeLinkMobile.querySelector('.active-dot').classList.remove('opacity-0');
+                        activeLinkMobile.querySelector('.active-dot').classList.add('opacity-100');
+                    }
+                }
+            });
+        }, { threshold: 0.3 }); // Trigger when 30% visible
+
+        // Scroll Direction Logic for Mobile Nav Shrink/Expand
+        let lastScrollY = window.scrollY;
+        const mobileNav = document.getElementById('mobile-bottom-nav');
+
+        window.addEventListener('scroll', () => {
+            if (window.innerWidth >= 768) return; // Only mobile
+
+            const currentScrollY = window.scrollY;
+
+            if (currentScrollY > lastScrollY && currentScrollY > 50) {
+                // Scrolling DOWN -> Shrink
+                mobileNav.classList.add('nav-shrunk');
+            } else {
+                // Scrolling UP -> Expand
+                mobileNav.classList.remove('nav-shrunk');
+            }
+
+            lastScrollY = currentScrollY;
+        });
+
+        // Initialize Observer logic on load
+        window.addEventListener('load', () => {
+            ['home', 'about', 'projects', 'contact'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) sectionObserver.observe(el);
+            });
+
+            // Set initial state (Home)
+            const homeLink = document.querySelector('.nav-link[data-section="home"]');
+            if (homeLink && window.innerWidth >= 768) {
+                setTimeout(() => updateNavIndicator(homeLink), 100);
+            }
+
+            // Set initial state mobile
+            const homeLinkMobile = document.querySelector('.mobile-nav-link[data-section="home"]');
+            if (homeLinkMobile && window.innerWidth < 768) {
+                homeLinkMobile.classList.remove('text-white/60');
+                homeLinkMobile.classList.add('text-white', 'bg-white/10');
+                homeLinkMobile.querySelector('.active-dot').classList.remove('opacity-0');
+                homeLinkMobile.querySelector('.active-dot').classList.add('opacity-100');
+            }
+        });
+
+        // --- NAVIGATION LOGIC END ---
+
+        // Navigation Controller
+        function navigateTo(view, sectionId = null) {
+            // Hide all views
+            document.getElementById('view-home').classList.add('hidden');
+            document.getElementById('view-project').classList.add('hidden');
+            document.getElementById('view-apartment').classList.add('hidden');
+
+            // Show requested view
+            const viewEl = document.getElementById(`view-${view}`);
+            if (viewEl) {
+                viewEl.classList.remove('hidden');
+                // Scroll to top ONLY if changing major views, otherwise smooth scroll handles it
+                if (view !== 'home') window.scrollTo(0, 0);
+
+                // Init Map if viewing project
+                if (view === 'project') {
+                    setTimeout(() => {
+                        initMap();
+                        if (mapInstance) mapInstance.invalidateSize();
+                    }, 200);
+                }
+            }
+
+            // Internal anchor navigation logic
+            if (view === 'home' && sectionId) {
+                const el = document.getElementById(sectionId);
+                if (el) {
+                    // Update indicator manually if we clicked a link to jump
+                    if (window.innerWidth >= 768) {
+                        const link = document.querySelector(`.nav-link[data-section="${sectionId}"]`);
+                        if (link) updateNavIndicator(link);
+                    }
+
+                    el.scrollIntoView({ behavior: 'smooth' });
+                }
+            }
+        }
+
+        // Project Page Logic
+        function openProjectDetails() {
+            const listContainer = document.getElementById('apartment-list');
+            listContainer.innerHTML = '';
+
+            apartments.forEach(apt => {
+                let statusBadge = '';
+                let opacityClass = '';
+                let clickAction = `onclick="openApartmentDetails('${apt.id}')"`;
+
+                if (apt.status === 'available') {
+                    statusBadge = '<span class="bg-green-100 text-green-700 text-xs font-bold px-3 py-1 rounded-full uppercase">Prosto</span>';
+                } else if (apt.status === 'reserved') {
+                    statusBadge = '<span class="bg-yellow-100 text-yellow-700 text-xs font-bold px-3 py-1 rounded-full uppercase">Rezervirano</span>';
+                } else {
+                    statusBadge = '<span class="bg-gray-100 text-gray-500 text-xs font-bold px-3 py-1 rounded-full uppercase">Prodano</span>';
+                    opacityClass = 'opacity-60 grayscale';
+                    clickAction = ''; // No click for sold
+                }
+
+                const card = `
+                    <div class="bg-white border border-gray-100 rounded-[2rem] overflow-hidden shadow-lg hover:shadow-xl transition duration-300 ${opacityClass}" ${clickAction}>
+                        <div class="h-48 overflow-hidden relative">
+                            <img src="${apt.image}" class="w-full h-full object-cover">
+                            <div class="absolute top-4 right-4">${statusBadge}</div>
+                        </div>
+                        <div class="p-6 text-left">
+                            <div class="flex justify-between items-start mb-2">
+                                <h4 class="text-xl font-bold text-gray-900">${apt.name}</h4>
+                                <span class="text-royal-600 font-bold">${apt.price}</span>
+                            </div>
+                            <p class="text-gray-500 text-sm mb-4">${apt.type}</p>
+                            <div class="flex items-center justify-between text-sm text-gray-400 border-t border-gray-100 pt-4">
+                                <span><i class="fas fa-ruler-combined mr-1"></i> ${apt.size}</span>
+                                <span><i class="fas fa-bed mr-1"></i> ${apt.rooms} sobe</span>
+                                ${apt.status !== 'sold' ? '<span class="text-royal-600 font-bold">Več <i class="fas fa-arrow-right ml-1"></i></span>' : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                listContainer.innerHTML += card;
+            });
+
+            navigateTo('project');
+        }
+
+        // Apartment Details Logic
+        function openApartmentDetails(id) {
+            const apt = apartments.find(a => a.id === id);
+            if (!apt) return;
+
+            const content = document.getElementById('apartment-details-content');
+
+            const featureList = apt.features.map(f =>
+                `<li class="flex items-center text-gray-700 bg-gray-50 px-4 py-3 rounded-full"><i class="fas fa-star text-royal-400 mr-3"></i>${f}</li>`
+            ).join('');
+
+            content.innerHTML = `
+                <div class="relative h-[50vh] min-h-[400px]">
+                    <img src="${apt.image}" class="w-full h-full object-cover">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent"></div>
+                    
+                    <div class="absolute top-28 left-4 md:left-8">
+                        <button onclick="navigateTo('project')" class="bg-white/20 backdrop-blur-md border border-white/30 text-white px-6 py-2 rounded-full hover:bg-white/30 transition flex items-center">
+                            <i class="fas fa-arrow-left mr-2"></i> Nazaj na projekt
+                        </button>
+                    </div>
+
+                    <div class="absolute bottom-0 left-0 w-full p-8 md:p-16 text-white text-left">
+                        <div class="max-w-7xl mx-auto">
+                            <span class="bg-royal-600 text-white text-sm font-bold px-4 py-2 rounded-full uppercase tracking-wide mb-4 inline-block shadow-lg">
+                                ${apt.type}
+                            </span>
+                            <h1 class="text-4xl md:text-6xl font-bold mb-2">${apt.name}</h1>
+                            <p class="text-xl md:text-2xl opacity-90">${apt.size} • ${apt.price}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-left">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-12">
+                        <div class="lg:col-span-2">
+                            <h3 class="text-2xl font-bold text-gray-900 mb-6">Podrobnosti</h3>
+                            <p class="text-gray-600 text-lg leading-relaxed mb-8">
+                                ${apt.description}
+                            </p>
+                            
+                            <h4 class="text-lg font-bold text-gray-900 mb-4">Glavne prednosti</h4>
+                            <ul class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12">
+                                ${featureList}
+                            </ul>
+
+                            <h4 class="text-lg font-bold text-gray-900 mb-4">Tloris</h4>
+                            <div class="bg-gray-100 rounded-[2rem] h-96 flex items-center justify-center border-2 border-dashed border-gray-300">
+                                <div class="text-center text-gray-400">
+                                    <i class="fas fa-map text-4xl mb-2"></i>
+                                    <p>Tloris stanovanja (Placeholder)</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="lg:col-span-1">
+                            <div class="bg-white border border-gray-100 shadow-xl rounded-[2rem] p-8 sticky top-28">
+                                <h3 class="text-xl font-bold text-gray-900 mb-2">Vas zanima to stanovanje?</h3>
+                                <p class="text-gray-500 mb-6 text-sm">Izpolnite obrazec in poslali vam bomo podroben katalog za enoto ${apt.name}.</p>
+                                
+                                <form onsubmit="event.preventDefault(); window.location.href='mailto:sanja@kapitel.si';" class="space-y-4">
+                                    <input type="text" placeholder="Ime in priimek" class="w-full px-6 py-3 bg-gray-50 rounded-full border border-gray-200 focus:border-royal-500 focus:ring-2 focus:ring-royal-200 outline-none transition">
+                                    <input type="email" placeholder="Email" class="w-full px-6 py-3 bg-gray-50 rounded-full border border-gray-200 focus:border-royal-500 focus:ring-2 focus:ring-royal-200 outline-none transition">
+                                    <button type="submit" class="w-full py-4 bg-royal-600 text-white font-bold rounded-full hover:bg-royal-700 transition shadow-lg shadow-royal-200">
+                                        Pošlji povpraševanje
+                                    </button>
+                                </form>
+                                <div class="mt-6 pt-6 border-t border-gray-100 text-center">
+                                    <p class="text-sm text-gray-500">Pišite nam:</p>
+                                    <a href="mailto:sanja@kapitel.si" class="text-royal-600 font-bold text-lg hover:underline">sanja@kapitel.si</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            navigateTo('apartment');
+        }
+
+        function scrollToContact() {
+            document.getElementById('contact').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Init Animations
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.fade-in-up').forEach(el => observer.observe(el));
+    </script>
+</body>
+
+</html>
