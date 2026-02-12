@@ -411,9 +411,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="w-full h-[400px] bg-gray-100 relative z-0 border-t border-gray-100">
-                                <div id="map-vanganel" class="w-full h-full"></div>
-                            </div>
+
 
 
                         </div>
@@ -555,7 +553,8 @@
                                     <p><i class="fas fa-expand text-royal-400 w-5"></i> Parcela: <strong>560 m²</strong>
                                     </p>
                                     <p><i class="fas fa-car text-royal-400 w-5"></i> Parkirna mesta:
-                                        <strong>P13-P15</strong></p>
+                                        <strong>P13-P15</strong>
+                                    </p>
                                 </div>
                             </div>
 
@@ -572,7 +571,8 @@
                                     <p><i class="fas fa-expand text-royal-400 w-5"></i> Parcela: <strong>475 m²</strong>
                                     </p>
                                     <p><i class="fas fa-car text-royal-400 w-5"></i> Parkirna mesta:
-                                        <strong>P16-P18</strong></p>
+                                        <strong>P16-P18</strong>
+                                    </p>
                                 </div>
                             </div>
                         </div>
@@ -686,39 +686,9 @@
             }
         ];
 
-        // Map Variables
-        let mapInstance = null;
 
-        // Init Map Function
-        function initMap() {
-            if (mapInstance) return; // Prevent re-init
 
-            // Vanganel Coordinates (Approx)
-            const vanganelCenter = [45.5205, 13.7805];
 
-            mapInstance = L.map('map-vanganel').setView(vanganelCenter, 16);
-
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; OpenStreetMap contributors'
-            }).addTo(mapInstance);
-
-            // Mock Green Polygon (Parcela)
-            const parcelCoords = [
-                [45.5208, 13.7800],
-                [45.5208, 13.7812],
-                [45.5200, 13.7812],
-                [45.5200, 13.7800]
-            ];
-
-            const polygon = L.polygon(parcelCoords, {
-                color: '#16a34a', // Border Green
-                fillColor: '#22c55e', // Fill Green
-                fillOpacity: 0.4,
-                weight: 2
-            }).addTo(mapInstance);
-
-            polygon.bindPopup("<b>Lokacija Projekta</b><br>Stanovanjski dvojčki").openPopup();
-        }
 
         // --- NAVIGATION LOGIC START ---
 
@@ -868,13 +838,7 @@
                 // Scroll to top ONLY if changing major views, otherwise smooth scroll handles it
                 if (view !== 'home') window.scrollTo(0, 0);
 
-                // Init Map if viewing project
-                if (view === 'project') {
-                    setTimeout(() => {
-                        initMap();
-                        if (mapInstance) mapInstance.invalidateSize();
-                    }, 200);
-                }
+
             }
 
             // Internal anchor navigation logic
